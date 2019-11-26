@@ -1,5 +1,5 @@
 build/
-libs/
+libs/*
 design/TARGET_CY8CPROTO-062-4343W/design.modus.lock
 design/TARGET_CY8CPROTO-062-4343W/GeneratedSource
 .*
