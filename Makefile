@@ -23,4 +23,8 @@ endif
 
 $(info Tools Directory: $(CY_TOOLS_DIR))
 
+PHONY: all
+all:
+	make program TARGET=CY8CPROTO-062-4343W TOOLCHAIN=GCC_ARM
+
 include $(CY_TOOLS_DIR)/make/start.mk
