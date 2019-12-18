@@ -441,11 +441,35 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="ioss[0].port[9].pin[3]">
+                    <Personality template="mxs40pin" version="1.1">
+                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="initialState" value="1"/>
+                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
+                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
+                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
+                        <Param id="driveStrength" value="CY_GPIO_DRIVE_1_2"/>
+                        <Param id="sioOutputBuffer" value="true"/>
+                        <Param id="inFlash" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="ioss[0].port[9].pin[4]">
                     <Alias value="P94"/>
                     <Personality template="mxs40pin" version="1.1">
                         <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
                         <Param id="initialState" value="0"/>
+                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
+                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
+                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
+                        <Param id="driveStrength" value="CY_GPIO_DRIVE_1_2"/>
+                        <Param id="sioOutputBuffer" value="true"/>
+                        <Param id="inFlash" value="true"/>
+                    </Personality>
+                </Block>
+                <Block location="ioss[0].port[9].pin[7]">
+                    <Personality template="mxs40pin" version="1.1">
+                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="initialState" value="1"/>
                         <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
                         <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
                         <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
@@ -584,20 +608,23 @@
                     </Personality>
                 </Block>
                 <Block location="peri[0].div_16[0]">
-                    <Alias value="CLK_PWM"/>
+                    <Alias value="CLK_PLAYER"/>
                     <Personality template="mxs40peripheralclock" version="1.0">
-                        <Param id="intDivider" value="5"/>
+                        <Param id="intDivider" value="1"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
+                <Block location="peri[0].div_16[1]">
+                    <Alias value="CLK_GIVER"/>
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="222"/>
                         <Param id="fracDivider" value="0"/>
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
                 <Block location="peri[0].div_24_5[0]">
                     <Alias value="SINEHELP_CLOCK"/>
-                    <Personality template="mxs40peripheralclock" version="1.0">
-                        <Param id="intDivider" value="222"/>
-                        <Param id="fracDivider" value="0"/>
-                        <Param id="startOnReset" value="true"/>
-                    </Personality>
                 </Block>
                 <Block location="peri[0].div_8[0]">
                     <Alias value="CYBSP_CSD_CLK_DIV"/>
@@ -768,16 +795,17 @@
                         <Param id="vddio1Mv" value="3300"/>
                     </Personality>
                 </Block>
+                <Block location="tcpwm[0].cnt[0]"/>
                 <Block location="tcpwm[1].cnt[20]">
-                    <Alias value="PWM"/>
+                    <Alias value="PLAYER"/>
                     <Personality template="mxs40pwm" version="1.0">
                         <Param id="PwmMode" value="CY_TCPWM_PWM_MODE_PWM"/>
                         <Param id="ClockPrescaler" value="CY_TCPWM_PWM_PRESCALER_DIVBY_1"/>
-                        <Param id="PwmAlignment" value="CY_TCPWM_PWM_LEFT_ALIGN"/>
+                        <Param id="PwmAlignment" value="CY_TCPWM_PWM_ASYMMETRIC_ALIGN"/>
                         <Param id="RunMode" value="CY_TCPWM_PWM_CONTINUOUS"/>
                         <Param id="DeadClocks" value="0"/>
                         <Param id="EnablePeriodSwap" value="false"/>
-                        <Param id="Period0" value="256"/>
+                        <Param id="Period0" value="63"/>
                         <Param id="Period1" value="32768"/>
                         <Param id="EnableCompareSwap" value="false"/>
                         <Param id="Compare0" value="0"/>
@@ -795,7 +823,7 @@
                     </Personality>
                 </Block>
                 <Block location="tcpwm[1].cnt[21]">
-                    <Alias value="SINE"/>
+                    <Alias value="SINE_GIVER"/>
                     <Personality template="mxs40pwm" version="1.0">
                         <Param id="PwmMode" value="CY_TCPWM_PWM_MODE_PWM"/>
                         <Param id="ClockPrescaler" value="CY_TCPWM_PWM_PRESCALER_DIVBY_1"/>
@@ -863,6 +891,10 @@
                     <Port name="tcpwm[1].cnt[20].line_compl[0]"/>
                 </Net>
                 <Net>
+                    <Port name="ioss[0].port[9].pin[3].digital_out[0]"/>
+                    <Port name="tcpwm[1].cnt[21].line_compl[0]"/>
+                </Net>
+                <Net>
                     <Port name="pass[0].sar[0].clock_sar[0]"/>
                     <Port name="peri[0].div_8[2].clk[0]"/>
                 </Net>
@@ -871,7 +903,7 @@
                     <Port name="tcpwm[1].cnt[20].clock[0]"/>
                 </Net>
                 <Net>
-                    <Port name="peri[0].div_24_5[0].clk[0]"/>
+                    <Port name="peri[0].div_16[1].clk[0]"/>
                     <Port name="tcpwm[1].cnt[21].clock[0]"/>
                 </Net>
                 <Mux name="sense" location="csd[0].csd[0]">
