@@ -7,13 +7,14 @@
 #include "stdlib.h"
 
 #define PDM_PCM_FIFO_TRG_LVL        128u
-#define FRAME_SIZE                  (4*PDM_PCM_FIFO_TRG_LVL)
+#define FRAME_SIZE                  40000u
+#define BUFFERS_SIZE                1u
 #define THRESHOLD_HYSTERESIS        4u
 #define VOLUME_RATIO                (1024u)
 
 volatile bool button_flag = false;
 volatile bool pdm_pcm_flag = false;
-volatile bool sine_change_flag = false;
+volatile bool writing_mode = false;
 
 uint32_t volume = 0;
 uint32_t num_samples = 0;
@@ -23,6 +24,12 @@ volatile uint8_t sineidx = 0;
 
 const uint8_t sinetable[256] = {31, 32, 33, 33, 34, 35, 36, 36, 37, 38, 39, 39, 40, 41, 41, 42, 43, 43, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 51, 52, 52, 53, 53, 53, 54, 54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 56, 56, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 58, 58, 58, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 56, 56, 56, 56, 56, 56, 55, 55, 55, 55, 54, 54, 54, 53, 53, 53, 52, 52, 51, 51, 51, 50, 50, 49, 49, 48, 48, 47, 46, 46, 45, 45, 44, 43, 43, 42, 41, 41, 40, 39, 39, 38, 37, 36, 36, 35, 34, 33, 33, 32, 31, 30, 29, 29, 28, 27, 26, 26, 25, 24, 23, 23, 22, 21, 21, 20, 19, 19, 18, 17, 17, 16, 16, 15, 14, 14, 13, 13, 12, 12, 11, 11, 11, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 19, 19, 20, 21, 21, 22, 23, 23, 24, 25, 26, 26, 27, 28, 29, 29, 30};
 
+volatile uint32_t buffers[BUFFERS_SIZE][FRAME_SIZE];
+
+uint8_t read_buffer_idx = 0;
+uint8_t write_buffer_idx = 0;
+uint16_t write_idx = 0;
+uint16_t read_idx = 0;
 
 const cy_stc_sysint_t pdm_pcm_isr_cfg = {
 #if CY_IP_MXAUDIOSS_INSTANCES == 1
@@ -38,13 +45,17 @@ const cy_stc_sysint_t sine_isr_cfg = {
     .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
 };
 
+const cy_stc_sysint_t fetcher_isr_cfg = {
+    .intrSrc = (IRQn_Type) FETCHER_IRQ,
+    .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
+};
+
 bool led_state = false;
 
 
 /* Assign pins for SD Host on SDHC1 */
 #define SDHC1_PORT1   (P12_0_PORT)
 #define SDHC1_PORT2   (P13_0_PORT)
-
 
 #define SDHC1_IO_VOLT_SEL_NUM           (P12_7_NUM)
 #define SDHC1_CARD_DETECT_N_NUM         (P12_1_NUM)
@@ -282,14 +293,26 @@ void example_of_work_with_sd() {
 	print_array("Read Data:", rxBuff, CY_SD_HOST_BLOCK_SIZE);
 }
 
-
-
 void button_isr_handler(void *callback_arg, cyhal_gpio_event_t event) {
     int status = !Cy_GPIO_Read(CYBSP_PIN12_PORT, CYBSP_PIN12_NUM);
     cyhal_gpio_write((cyhal_gpio_t) CYBSP_USER_LED, status);
     Cy_GPIO_Write(CYBSP_PIN12_PORT, CYBSP_PIN12_NUM, status);
 
-    button_flag = true;
+    for (uint8_t idx = 0; idx < BUFFERS_SIZE; idx++) {
+        for (uint16_t idxx = 0; idxx < FRAME_SIZE; idxx++) {
+            if (idxx % 50 == 0)
+                printf("\r\n");
+
+            printf("%d ", buffers[idx][idxx]);
+        }
+        printf("\r\n");
+    }
+
+    writing_mode = !writing_mode;
+    printf("writing_mode: %d\r\n", writing_mode);
+
+    if (writing_mode)
+        NVIC_EnableIRQ(pdm_pcm_isr_cfg.intrSrc);
 }
 
 void pdm_pcm_isr_handler() {
@@ -301,6 +324,24 @@ void pdm_pcm_isr_handler() {
 void sine_isr_handler() {
     Cy_TCPWM_PWM_SetCompare0(PLAYER_HW, PLAYER_NUM, sinetable[sineidx++]);
     Cy_TCPWM_ClearInterrupt(SINE_GIVER_HW, SINE_GIVER_NUM, CY_TCPWM_INT_ON_TC);
+}
+
+void fetcher_isr_handler() {
+    if (writing_mode)
+        return;
+
+    /* printf("%d\r\n", buffers[read_buffer_idx][read_idx]); */
+    Cy_TCPWM_PWM_SetCompare0(PLAYER_HW, PLAYER_NUM, buffers[read_buffer_idx][read_idx++]);
+    Cy_TCPWM_ClearInterrupt(FETCHER_HW, FETCHER_NUM, CY_TCPWM_INT_ON_TC);
+
+    if (read_idx >= FRAME_SIZE) {
+        read_buffer_idx += 1;
+
+        if (read_buffer_idx >= BUFFERS_SIZE)
+            read_buffer_idx = 0;
+
+        read_idx = 0;
+    }
 }
 
 void handle_error () {
@@ -339,7 +380,7 @@ int main() {
     Cy_GPIO_Pin_FastInit(CYBSP_PIN12_PORT, CYBSP_PIN12_NUM, CY_GPIO_DM_STRONG, 1, HSIOM_SEL_GPIO);
 
     Cy_SysInt_Init(&pdm_pcm_isr_cfg, pdm_pcm_isr_handler);
-    NVIC_EnableIRQ(pdm_pcm_isr_cfg.intrSrc);
+    /* NVIC_EnableIRQ(pdm_pcm_isr_cfg.intrSrc); */
     Cy_PDM_PCM_Init(CYBSP_PDM_PCM_HW, &CYBSP_PDM_PCM_config);
     Cy_PDM_PCM_ClearFifo(CYBSP_PDM_PCM_HW);
     Cy_PDM_PCM_Enable(CYBSP_PDM_PCM_HW);
@@ -353,49 +394,65 @@ int main() {
     Cy_SysInt_Init(&sine_isr_cfg, sine_isr_handler);
     NVIC_EnableIRQ(sine_isr_cfg.intrSrc);
     Cy_TCPWM_PWM_Init(SINE_GIVER_HW, SINE_GIVER_NUM, &SINE_GIVER_config);
-    Cy_TCPWM_PWM_Enable(SINE_GIVER_HW, SINE_GIVER_NUM);
     Cy_TCPWM_TriggerStart(SINE_GIVER_HW, SINE_GIVER_MASK);
+    Cy_TCPWM_PWM_Enable(SINE_GIVER_HW, SINE_GIVER_NUM);
+
+    // fetching real data
+    /* Cy_SysInt_Init(&fetcher_isr_cfg, fetcher_isr_handler); */
+    /* NVIC_EnableIRQ(fetcher_isr_cfg.intrSrc); */
+    /* Cy_TCPWM_PWM_Init(FETCHER_HW, FETCHER_NUM, &FETCHER_config); */
+    /* Cy_TCPWM_TriggerStart(FETCHER_HW, FETCHER_MASK); */
+    /* Cy_TCPWM_PWM_Enable(FETCHER_HW, FETCHER_NUM); */
+
+    /* initCard(); */
 
     printf(". . .\r\n");
+
+    for (uint8_t idx = 0; idx < BUFFERS_SIZE; idx++) {
+        for (uint16_t idxx = 0; idxx < FRAME_SIZE; idxx++)
+            buffers[idx][idxx] = sinetable[idxx];
+    }
+
+    uint64_t total = 0;
+    uint64_t index = 0;
 
     for(;;) {
     	if (pdm_pcm_flag) {
             pdm_pcm_flag = 0;
 
-            for (uint32_t index = 0; index < PDM_PCM_FIFO_TRG_LVL; index++) {
-                volume += abs((int32_t) Cy_PDM_PCM_ReadFifo(CYBSP_PDM_PCM_HW));
+            if (volume_index >= 4) {
+                total /= 1024;
+                buffers[write_buffer_idx][write_idx] = total >> 10;
+
+                write_idx += 1;
+                volume_index = 0;
+                total = 0;
             }
 
-            num_samples += PDM_PCM_FIFO_TRG_LVL;
+            volume_index += 1;
+
+            for (uint8_t index = 0; index < PDM_PCM_FIFO_TRG_LVL; index++) {
+                buffers[write_buffer_idx][write_idx + index] = (uint32_t) Cy_PDM_PCM_ReadFifo(CYBSP_PDM_PCM_HW);
+            }
+
+            write_idx += PDM_PCM_FIFO_TRG_LVL;
 
             Cy_PDM_PCM_ClearInterrupt(CYBSP_PDM_PCM_HW, CY_PDM_PCM_INTR_RX_TRIGGER);
-
             NVIC_EnableIRQ(pdm_pcm_isr_cfg.intrSrc);
 
-            if (num_samples >= FRAME_SIZE) {
-                printf("\r\n");
+            if (write_idx >= FRAME_SIZE) {
+                // Moving onto the next buffer
+                printf("write_buffer_idx ~ %d\r\n", write_buffer_idx);
+                write_buffer_idx = (write_buffer_idx + 1) % BUFFERS_SIZE;
 
-                for (uint32_t index = 0; index < (volume/VOLUME_RATIO); index++)
-                    printf("-");
+                if (write_buffer_idx == 0) {
+                    NVIC_DisableIRQ(pdm_pcm_isr_cfg.intrSrc);
+                    printf("done\r\n");
+                }
 
-                if ((volume/VOLUME_RATIO) > noise_threshold)
-                    cyhal_gpio_write((cyhal_gpio_t) CYBSP_USER_LED, CYBSP_LED_STATE_ON);
-                else
-                    cyhal_gpio_write((cyhal_gpio_t) CYBSP_USER_LED, CYBSP_LED_STATE_OFF);
-
-                num_samples = 0;
-                volume = 0;
+                // Reset writing index
+                write_idx = 0;
             }
-        }
-
-        if (sine_change_flag) {
-            sine_change_flag = false;
-        }
-
-        if (button_flag) {
-            button_flag = false;
-            noise_threshold += 4u;
-            printf("Noise threshold: %lu\r\n", (uint32_t) noise_threshold);
         }
     }
 }

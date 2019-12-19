@@ -10,16 +10,16 @@
                         <Param id="chanSwap" value="false"/>
                         <Param id="gainLeft" value="CY_PDM_PCM_BYPASS"/>
                         <Param id="gainRight" value="CY_PDM_PCM_BYPASS"/>
-                        <Param id="chanSelect" value="CY_PDM_PCM_OUT_CHAN_LEFT"/>
+                        <Param id="chanSelect" value="CY_PDM_PCM_OUT_CHAN_RIGHT"/>
                         <Param id="highPassDisable" value="false"/>
                         <Param id="highPassFilterGain" value="1"/>
                         <Param id="rxNotEmpty" value="false"/>
                         <Param id="rxOverflow" value="false"/>
                         <Param id="rxTrig" value="true"/>
                         <Param id="rxUnderflow" value="false"/>
-                        <Param id="signExtension" value="true"/>
+                        <Param id="signExtension" value="false"/>
                         <Param id="wordLength" value="CY_PDM_PCM_WLEN_16_BIT"/>
-                        <Param id="rxFifoDmaEnable" value="false"/>
+                        <Param id="rxFifoDmaEnable" value="true"/>
                         <Param id="rxFifoTriggerLevel" value="128"/>
                         <Param id="softMuteEnable" value="false"/>
                         <Param id="softMuteFineGain" value="1"/>
@@ -623,6 +623,14 @@
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="peri[0].div_16[2]">
+                    <Alias value="CLK_FETCHER"/>
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="1250"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="peri[0].div_24_5[0]">
                     <Alias value="SINEHELP_CLOCK"/>
                 </Block>
@@ -795,7 +803,6 @@
                         <Param id="vddio1Mv" value="3300"/>
                     </Personality>
                 </Block>
-                <Block location="tcpwm[0].cnt[0]"/>
                 <Block location="tcpwm[1].cnt[20]">
                     <Alias value="PLAYER"/>
                     <Personality template="mxs40pwm" version="1.0">
@@ -824,6 +831,32 @@
                 </Block>
                 <Block location="tcpwm[1].cnt[21]">
                     <Alias value="SINE_GIVER"/>
+                    <Personality template="mxs40pwm" version="1.0">
+                        <Param id="PwmMode" value="CY_TCPWM_PWM_MODE_PWM"/>
+                        <Param id="ClockPrescaler" value="CY_TCPWM_PWM_PRESCALER_DIVBY_1"/>
+                        <Param id="PwmAlignment" value="CY_TCPWM_PWM_LEFT_ALIGN"/>
+                        <Param id="RunMode" value="CY_TCPWM_PWM_CONTINUOUS"/>
+                        <Param id="DeadClocks" value="0"/>
+                        <Param id="EnablePeriodSwap" value="false"/>
+                        <Param id="Period0" value="1"/>
+                        <Param id="Period1" value="32768"/>
+                        <Param id="EnableCompareSwap" value="false"/>
+                        <Param id="Compare0" value="0"/>
+                        <Param id="Compare1" value="16384"/>
+                        <Param id="InterruptSource" value="CY_TCPWM_INT_ON_TC"/>
+                        <Param id="CountInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="KillInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="ReloadInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="StartInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="SwapInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="KillMode" value="CY_TCPWM_PWM_STOP_ON_KILL"/>
+                        <Param id="InvertPwm" value="false"/>
+                        <Param id="InvertPwm_n" value="false"/>
+                        <Param id="inFlash" value="true"/>
+                    </Personality>
+                </Block>
+                <Block location="tcpwm[1].cnt[22]">
+                    <Alias value="FETCHER"/>
                     <Personality template="mxs40pwm" version="1.0">
                         <Param id="PwmMode" value="CY_TCPWM_PWM_MODE_PWM"/>
                         <Param id="ClockPrescaler" value="CY_TCPWM_PWM_PRESCALER_DIVBY_1"/>
@@ -905,6 +938,10 @@
                 <Net>
                     <Port name="peri[0].div_16[1].clk[0]"/>
                     <Port name="tcpwm[1].cnt[21].clock[0]"/>
+                </Net>
+                <Net>
+                    <Port name="peri[0].div_16[2].clk[0]"/>
+                    <Port name="tcpwm[1].cnt[22].clock[0]"/>
                 </Net>
                 <Mux name="sense" location="csd[0].csd[0]">
                     <Arm>
