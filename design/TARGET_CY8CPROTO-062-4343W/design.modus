@@ -483,8 +483,8 @@
                 </Block>
                 <Block location="pass[0].aref[0]">
                     <Personality template="mxs40aref" version="1.0">
-                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_LOCAL_1_2V"/>
-                        <Param id="external_vref_voltage" value="1.2"/>
+                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_EXTERNAL"/>
+                        <Param id="external_vref_voltage" value="0.600"/>
                         <Param id="iztat_source" value="CY_SYSANALOG_IZTAT_SOURCE_LOCAL"/>
                         <Param id="deep_sleep_mode" value="CY_SYSANALOG_DEEPSLEEP_DISABLE"/>
                         <Param id="inFlash" value="true"/>
@@ -492,16 +492,16 @@
                 </Block>
                 <Block location="pass[0].sar[0]">
                     <Personality template="mxs40sar" version="1.0">
-                        <Param id="vref_select" value="CY_SAR_VREF_SEL_BGR"/>
+                        <Param id="vref_select" value="CY_SAR_VREF_SEL_VDDA"/>
                         <Param id="vref_voltage" value="1.2"/>
-                        <Param id="num_channels" value="2"/>
+                        <Param id="num_channels" value="1"/>
                         <Param id="vref_byp_cap" value="true"/>
                         <Param id="is_variable_clock" value="false"/>
                         <Param id="soc_en" value="false"/>
-                        <Param id="vneg_select" value="CY_SAR_NEG_SEL_VSSA_KELVIN"/>
-                        <Param id="sample_rate" value="20000"/>
+                        <Param id="vneg_select" value="CY_SAR_NEG_SEL_VREF"/>
+                        <Param id="sample_rate" value="44100"/>
                         <Param id="diff_format" value="CY_SAR_DIFFERENTIAL_SIGNED"/>
-                        <Param id="se_format" value="CY_SAR_SINGLE_ENDED_SIGNED"/>
+                        <Param id="se_format" value="CY_SAR_SINGLE_ENDED_UNSIGNED"/>
                         <Param id="trigger_mode" value="CY_SAR_TRIGGER_MODE_FW_AND_HWEDGE"/>
                         <Param id="avg_cnt" value="CY_SAR_AVG_CNT_2"/>
                         <Param id="avg_mode" value="CY_SAR_AVG_MODE_SEQUENTIAL_FIXED"/>
@@ -656,6 +656,13 @@
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="peri[0].div_8[3]">
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="1"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="srss[0].clock[0]">
                     <Personality template="mxs40sysclocks" version="1.2"/>
                 </Block>
@@ -803,6 +810,31 @@
                         <Param id="vddio1Mv" value="3300"/>
                     </Personality>
                 </Block>
+                <Block location="tcpwm[0].cnt[0]">
+                    <Personality template="mxs40pwm" version="1.0">
+                        <Param id="PwmMode" value="CY_TCPWM_PWM_MODE_PWM"/>
+                        <Param id="ClockPrescaler" value="CY_TCPWM_PWM_PRESCALER_DIVBY_1"/>
+                        <Param id="PwmAlignment" value="CY_TCPWM_PWM_LEFT_ALIGN"/>
+                        <Param id="RunMode" value="CY_TCPWM_PWM_CONTINUOUS"/>
+                        <Param id="DeadClocks" value="0"/>
+                        <Param id="EnablePeriodSwap" value="false"/>
+                        <Param id="Period0" value="32768"/>
+                        <Param id="Period1" value="32768"/>
+                        <Param id="EnableCompareSwap" value="false"/>
+                        <Param id="Compare0" value="16384"/>
+                        <Param id="Compare1" value="16384"/>
+                        <Param id="InterruptSource" value="CY_TCPWM_INT_NONE"/>
+                        <Param id="CountInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="KillInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="ReloadInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="StartInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="SwapInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="KillMode" value="CY_TCPWM_PWM_STOP_ON_KILL"/>
+                        <Param id="InvertPwm" value="false"/>
+                        <Param id="InvertPwm_n" value="false"/>
+                        <Param id="inFlash" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="tcpwm[1].cnt[20]">
                     <Alias value="PLAYER"/>
                     <Personality template="mxs40pwm" version="1.0">
@@ -943,6 +975,10 @@
                     <Port name="peri[0].div_16[2].clk[0]"/>
                     <Port name="tcpwm[1].cnt[22].clock[0]"/>
                 </Net>
+                <Net>
+                    <Port name="peri[0].div_8[3].clk[0]"/>
+                    <Port name="tcpwm[0].cnt[0].clock[0]"/>
+                </Net>
                 <Mux name="sense" location="csd[0].csd[0]">
                     <Arm>
                         <Port name="ioss[0].port[7].pin[7].analog[0]"/>
@@ -984,9 +1020,6 @@
                 <Mux name="Vplus" location="pass[0].sar[0]">
                     <Arm>
                         <Port name="ioss[0].port[10].pin[0].analog[0]"/>
-                    </Arm>
-                    <Arm>
-                        <Port name="ioss[0].port[10].pin[2].analog[0]"/>
                     </Arm>
                 </Mux>
             </Netlist>
