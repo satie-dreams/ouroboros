@@ -5,29 +5,6 @@ const cy_stc_sysint_t SAR_IRQ_cfg = {
     .intrPriority   	= 0
 };
 
-/* ISR function to handle all SAR interrupts.
- * This same routine gets called when any of the enabled SAR interrupt sources
- * are enabled (EOS, overflow, FW collision, saturation detection, or range detection). */
-void SAR_Interrupt(void)
-{
-    uint32_t intr_status = 0u;
-    /* Read interrupt status register. */
-    intr_status = Cy_SAR_GetInterruptStatus(SAR);
-    /* Check what triggered the interrupt. */
-    if ((intr_status & (uint32_t) CY_SAR_INTR_EOS_MASK) == (uint32_t) CY_SAR_INTR_EOS_MASK)
-    {
-    	uint32_t chan = 0UL;
-
-    	printf("%d\r\n", Cy_SAR_GetResult16(SAR, chan));
-
-//    	Cy_SysLib_Delay(500);
-        /* An end of scan occurred, retrieve the ADC result and do something with it here. */
-    }
-    /* Check for the saturation detection status, if enabled. */
-    /* Check for the range detection status, if enabled. */
-    /* Clear the handled interrupt. */
-    Cy_SAR_ClearInterrupt(SAR, intr_status);
-}
 
 void ADC_init() {
 	cy_en_sysanalog_status_t status_aref;

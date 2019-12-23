@@ -128,6 +128,18 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="ioss[0].port[10].pin[3]">
+                    <Personality template="mxs40pin" version="1.1">
+                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="initialState" value="1"/>
+                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
+                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
+                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
+                        <Param id="driveStrength" value="CY_GPIO_DRIVE_1_2"/>
+                        <Param id="sioOutputBuffer" value="true"/>
+                        <Param id="inFlash" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="ioss[0].port[10].pin[4]">
                     <Personality template="mxs40pin" version="1.1">
                         <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
@@ -499,7 +511,7 @@
                         <Param id="is_variable_clock" value="false"/>
                         <Param id="soc_en" value="false"/>
                         <Param id="vneg_select" value="CY_SAR_NEG_SEL_VREF"/>
-                        <Param id="sample_rate" value="44100"/>
+                        <Param id="sample_rate" value="40000"/>
                         <Param id="diff_format" value="CY_SAR_DIFFERENTIAL_SIGNED"/>
                         <Param id="se_format" value="CY_SAR_SINGLE_ENDED_UNSIGNED"/>
                         <Param id="trigger_mode" value="CY_SAR_TRIGGER_MODE_FW_AND_HWEDGE"/>
@@ -627,6 +639,13 @@
                     <Alias value="CLK_FETCHER"/>
                     <Personality template="mxs40peripheralclock" version="1.0">
                         <Param id="intDivider" value="1250"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
+                <Block location="peri[0].div_16[3]">
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="1"/>
                         <Param id="fracDivider" value="0"/>
                         <Param id="startOnReset" value="true"/>
                     </Personality>
@@ -913,6 +932,7 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="tcpwm[1].cnt[23]"/>
             </BlockConfig>
             <Netlist>
                 <Net>
