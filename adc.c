@@ -23,7 +23,7 @@ void ADC_init() {
 	Cy_TCPWM_PWM_Enable(TCPWM0, 0);
 	Cy_TCPWM_TriggerStart(TCPWM0, 1);
 
-	(void)Cy_SysInt_Init(&SAR_IRQ_cfg, SAR_Interrupt);
+	Cy_SysInt_Init(&SAR_IRQ_cfg, SAR_Interrupt);
 	NVIC_EnableIRQ(SAR_IRQ_cfg.intrSrc);
 
 	if (CY_SAR_SUCCESS == status) {
