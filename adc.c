@@ -1,12 +1,16 @@
-#include "adc.h"
+#include "cy_device_headers.h"
+#include "cycfg.h"
+#include "cy_sysint.h"
+#include "cy_retarget_io.h"
 
 const cy_stc_sysint_t SAR_IRQ_cfg = {
     .intrSrc        	= pass_interrupt_sar_IRQn,
     .intrPriority   	= 0
 };
 
+void SAR_Interrupt(void);
 
-void ADC_init() {
+void adc_init() {
 	cy_en_sysanalog_status_t status_aref;
 	status_aref = Cy_SysAnalog_Init(&Cy_SysAnalog_Fast_Local);
 
