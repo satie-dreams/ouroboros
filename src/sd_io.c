@@ -215,14 +215,13 @@ void eraseSDBuffer(uint32_t start, uint32_t end) {
 void sdcard_test() {
     srand(time(NULL));
 
-    const uint8_t BLOCK_BATCH_NUM = 2;
+    const uint8_t BLOCK_BATCH_NUM = 4;
     // all 16bit
     const uint32_t BUFFER_SIZE = BLOCK_BATCH_NUM * (CY_SD_HOST_BLOCK_SIZE / 2);
 
     const uint32_t start_address = 90000u;
 	// erase all information on given addresses
-	eraseSDBuffer(start_address, start_address + 2 * BUFFER_SIZE);
-
+	/* eraseSDBuffer(start_address, start_address + 2 * BUFFER_SIZE); */
 
 	uint16_t rx[BUFFER_SIZE];   /* Receiver buffer. */
 	uint16_t tx[BUFFER_SIZE];   /* Transmitter buffer. */
@@ -248,8 +247,8 @@ void sdcard_test() {
 	print_array("(rx): ", rx, BUFFER_SIZE);
 
 	data.data = (uint32_t*) tx;
-
 	print_array("(tx): ", tx, BUFFER_SIZE);
+    Cy_SD_Host_Write(SDHC1, &data, &sdHostContext);
 
     Cy_SysLib_Delay(200);
 
