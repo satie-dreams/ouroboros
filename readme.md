@@ -4,8 +4,8 @@ The main concept of the project is to create a professional guitar looper that c
 
 ### Team:
 
-* Maletskyi Denys (@maletsden)
 * Maxim Zhuravinsky(@ogoremeni)
+* Maletskyi Denys (@maletsden)
 * Markiyan Novosad (@mnovosad1095)
 
 
