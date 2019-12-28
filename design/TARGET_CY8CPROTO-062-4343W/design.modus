@@ -152,22 +152,11 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="ioss[0].port[11].pin[7]">
-                    <Personality template="mxs40pin" version="1.1">
-                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
-                        <Param id="initialState" value="1"/>
-                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
-                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
-                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
-                        <Param id="driveStrength" value="CY_GPIO_DRIVE_1_2"/>
-                        <Param id="sioOutputBuffer" value="true"/>
-                        <Param id="inFlash" value="true"/>
-                    </Personality>
-                </Block>
+                <Block location="ioss[0].port[11].pin[7]"/>
                 <Block location="ioss[0].port[12].pin[0]">
-                    <Alias value="CYBSP_PIN12"/>
+                    <Alias value="HERO"/>
                     <Personality template="mxs40pin" version="1.1">
-                        <Param id="DriveModes" value="CY_GPIO_DM_HIGHZ"/>
+                        <Param id="DriveModes" value="CY_GPIO_DM_ANALOG"/>
                         <Param id="initialState" value="1"/>
                         <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
                         <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
@@ -177,6 +166,8 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="ioss[0].port[12].pin[1]"/>
+                <Block location="ioss[0].port[12].pin[4]"/>
                 <Block location="ioss[0].port[1].pin[0]">
                     <Alias value="CYBSP_CSD_TX"/>
                     <Personality template="mxs40pin" version="1.1">
@@ -190,6 +181,7 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="ioss[0].port[3].pin[0]"/>
                 <Block location="ioss[0].port[6].pin[4]">
                     <Alias value="CYBSP_SWO"/>
                     <Personality template="mxs40pin" version="1.1">
@@ -455,7 +447,7 @@
                 </Block>
                 <Block location="ioss[0].port[9].pin[3]">
                     <Personality template="mxs40pin" version="1.1">
-                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="DriveModes" value="CY_GPIO_DM_ANALOG"/>
                         <Param id="initialState" value="1"/>
                         <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
                         <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
@@ -1019,20 +1011,12 @@
                     <Port name="tcpwm[1].cnt[20].line_compl[0]"/>
                 </Net>
                 <Net>
-                    <Port name="ioss[0].port[9].pin[3].digital_out[0]"/>
-                    <Port name="tcpwm[1].cnt[21].line_compl[0]"/>
-                </Net>
-                <Net>
                     <Port name="ioss[0].port[9].pin[7].digital_out[0]"/>
                     <Port name="tcpwm[1].cnt[1].line_compl[0]"/>
                 </Net>
                 <Net>
                     <Port name="pass[0].sar[0].clock_sar[0]"/>
                     <Port name="peri[0].div_8[5].clk[0]"/>
-                </Net>
-                <Net>
-                    <Port name="peri[0].div_8[6].clk[0]"/>
-                    <Port name="tcpwm[1].cnt[20].clock[0]"/>
                 </Net>
                 <Net>
                     <Port name="peri[0].div_16[1].clk[0]"/>
@@ -1049,6 +1033,10 @@
                 <Net>
                     <Port name="peri[0].div_8[4].clk[0]"/>
                     <Port name="tcpwm[1].cnt[1].clock[0]"/>
+                </Net>
+                <Net>
+                    <Port name="peri[0].div_8[6].clk[0]"/>
+                    <Port name="tcpwm[1].cnt[20].clock[0]"/>
                 </Net>
                 <Mux name="sense" location="csd[0].csd[0]">
                     <Arm>

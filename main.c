@@ -1,5 +1,5 @@
 #include "stdlib.h"
- #include "cy_pdl.h"
+#include "cy_pdl.h"
 #include "cyhal.h"
 #include "cybsp.h"
 #include "cy_retarget_io.h"
@@ -7,8 +7,11 @@
 #include "cycfg.h"
 #include "cy_sysint.h"
 
-#define DEBUG 0
-#define ADC_DEBUG 0
+#include "adc.h"
+
+#define DEBUG 1
+#define DEBUG_ADC 0
+#define CY_USING_HAL 1
 
 #define PDM_PCM_FIFO_TRG_LVL        128u
 // How many blocks to fetch in one go
@@ -19,6 +22,10 @@
 #define BUFFERS_NUM	                2u
 #define THRESHOLD_HYSTERESIS        4u
 #define VOLUME_RATIO                (1024u)
+
+cyhal_gpio_t led = CYBSP_USER_LED;
+cyhal_gpio_t little_button = CYBSP_USER_BTN;
+cyhal_gpio_t hero_pin = HERO_HAL_PORT_PIN;
 
 uint16_t buffer[BUFFER_SIZE];
 
@@ -73,17 +80,16 @@ void SAR_Interrupt() {
             buffer[write_idx++] = adc_code;
         }
 
-        if (ADC_DEBUG)
+        if (DEBUG_ADC)
             printf("(adc): %d\r\n", adc_code);
     }
 
     Cy_SAR_ClearInterrupt(SAR, intr_status);
 }
 
-void button_isr_handler(void *callback_arg, cyhal_gpio_event_t event) {
-    int status = !Cy_GPIO_Read(CYBSP_PIN12_PORT, CYBSP_PIN12_NUM);
-    cyhal_gpio_write((cyhal_gpio_t) CYBSP_USER_LED, status);
-    Cy_GPIO_Write(CYBSP_PIN12_PORT, CYBSP_PIN12_NUM, status);
+void little_button_isr_handler(void *callback_arg, cyhal_gpio_event_t event) {
+    cyhal_gpio_toggle(led);
+    cyhal_gpio_toggle(hero_pin);
 
     record_mode = !record_mode;
 
@@ -113,57 +119,48 @@ void fetcher_isr_handler() {
     }
 }
 
-void handle_error () {
-    printf("sin²(θ) is odious to me\r\n");
+void handle_error(char* msg) {
+    printf(msg);
 
-    int status = 1;
-    for (int idx = 0; idx < 16; idx++) {
-        CyDelay(100);
-        status = !status;
-        cyhal_gpio_write((cyhal_gpio_t) CYBSP_USER_LED, status);
+    uint8_t times = 16;
+
+    while (times --> 0) {
+        CyDelay(150);
+        cyhal_gpio_toggle(led);
     }
 
     CY_ASSERT(0);
 }
 
+cy_rslt_t status;
+
 int main() {
     if (cybsp_init() != CY_RSLT_SUCCESS)
-        handle_error();
+        handle_error("");
 
     __enable_irq();
 
-    cy_rslt_t result = cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);
+    if (cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE) != CY_RSLT_SUCCESS)
+        handle_error("");
 
-	// After all printing through UART REQUIRED "\r\n" in the end of message
-	if(result != CY_RSLT_SUCCESS) {
-		CY_ASSERT(0);
-	}
-
-	/* \x1b[2J\x1b[;H - ANSI ESC sequence for clear screen */
+	// \x1b[2J\x1b[;H - ANSI ESC sequence for clearing screen
     printf("\x1b[2J\x1b[;H");
 
-    cyhal_gpio_init((cyhal_gpio_t) CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
-    cyhal_gpio_init((cyhal_gpio_t) CYBSP_USER_BTN, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
-    cyhal_gpio_enable_event((cyhal_gpio_t) CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
-    cyhal_gpio_register_callback((cyhal_gpio_t) CYBSP_USER_BTN, button_isr_handler, NULL);
+    status = cyhal_gpio_init(led, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
+    if (status != CY_RSLT_SUCCESS)
+        handle_error("(init): failed led");
 
-    Cy_GPIO_Pin_FastInit(CYBSP_PIN12_PORT, CYBSP_PIN12_NUM, CY_GPIO_DM_STRONG, 1, HSIOM_SEL_GPIO);
+    cyhal_gpio_init(little_button, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
+    cyhal_gpio_enable_event(little_button, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
+    cyhal_gpio_register_callback(little_button, little_button_isr_handler, NULL);
+
+    // most of those pins are dedicated, can't repurpose them unless init'ing directly
+    Cy_GPIO_Pin_FastInit(HERO_PORT, HERO_NUM, CY_GPIO_DM_STRONG, 1, HSIOM_SEL_GPIO);
 
     // 6-bit left pwm
     Cy_TCPWM_PWM_Init(PLAYER_HW, PLAYER_NUM, &PLAYER_config);
     Cy_TCPWM_PWM_Enable(PLAYER_HW, PLAYER_NUM);
     Cy_TCPWM_TriggerStart(PLAYER_HW, PLAYER_MASK);
-
-    Cy_TCPWM_PWM_Init(SINE_PLAYER_HW, SINE_PLAYER_NUM, &SINE_PLAYER_config);
-    Cy_TCPWM_PWM_Enable(SINE_PLAYER_HW, SINE_PLAYER_NUM);
-    Cy_TCPWM_TriggerStart(SINE_PLAYER_HW, SINE_PLAYER_MASK);
-
-    /* Fetching 440Hz test sine */
-    Cy_SysInt_Init(&sine_isr_cfg, sine_isr_handler);
-    NVIC_EnableIRQ(sine_isr_cfg.intrSrc);
-    Cy_TCPWM_PWM_Init(SINE_FETCHER_HW, SINE_FETCHER_NUM, &SINE_FETCHER_config);
-    Cy_TCPWM_TriggerStart(SINE_FETCHER_HW, SINE_FETCHER_MASK);
-    Cy_TCPWM_PWM_Enable(SINE_FETCHER_HW, SINE_FETCHER_NUM);
 
     // fetching real data
     Cy_SysInt_Init(&fetcher_isr_cfg, fetcher_isr_handler);
@@ -172,16 +169,24 @@ int main() {
     Cy_TCPWM_TriggerStart(FETCHER_HW, FETCHER_MASK);
     Cy_TCPWM_PWM_Enable(FETCHER_HW, FETCHER_NUM);
 
+    // playing testing wave
+    Cy_TCPWM_PWM_Init(SINE_PLAYER_HW, SINE_PLAYER_NUM, &SINE_PLAYER_config);
+    Cy_TCPWM_PWM_Enable(SINE_PLAYER_HW, SINE_PLAYER_NUM);
+    Cy_TCPWM_TriggerStart(SINE_PLAYER_HW, SINE_PLAYER_MASK);
+
+    // fetching testing wave
+    Cy_SysInt_Init(&sine_isr_cfg, sine_isr_handler);
+    NVIC_EnableIRQ(sine_isr_cfg.intrSrc);
+    Cy_TCPWM_PWM_Init(SINE_FETCHER_HW, SINE_FETCHER_NUM, &SINE_FETCHER_config);
+    Cy_TCPWM_TriggerStart(SINE_FETCHER_HW, SINE_FETCHER_MASK);
+    Cy_TCPWM_PWM_Enable(SINE_FETCHER_HW, SINE_FETCHER_NUM);
+
     adc_init();
 
-    printf("CY_SD_HOST_BLOCK_SIZE: %d\r\n", CY_SD_HOST_BLOCK_SIZE);
-    printf("BUFFER_SIZE: %d\r\n", BUFFER_SIZE);
+    printf(". . .\r\n");
 
-    printf("(sdcard) is online\r\n");
-
-    for (uint16_t idx = 0; idx < BUFFER_SIZE; idx++) {
-        buffer[idx] = 0;
+    while (true) {
+        CyDelay(100);
+        cyhal_gpio_toggle(led);
     }
-
-    for(;;);
 }
