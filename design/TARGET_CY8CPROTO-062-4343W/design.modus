@@ -156,7 +156,7 @@
                 <Block location="ioss[0].port[12].pin[0]">
                     <Alias value="HERO"/>
                     <Personality template="mxs40pin" version="1.1">
-                        <Param id="DriveModes" value="CY_GPIO_DM_ANALOG"/>
+                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG"/>
                         <Param id="initialState" value="1"/>
                         <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
                         <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
@@ -635,13 +635,6 @@
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="peri[0].div_16[3]">
-                    <Personality template="mxs40peripheralclock" version="1.0">
-                        <Param id="intDivider" value="1"/>
-                        <Param id="fracDivider" value="0"/>
-                        <Param id="startOnReset" value="true"/>
-                    </Personality>
-                </Block>
                 <Block location="peri[0].div_24_5[0]">
                     <Alias value="SINEHELP_CLOCK"/>
                 </Block>
@@ -690,6 +683,7 @@
                     </Personality>
                 </Block>
                 <Block location="peri[0].div_8[6]">
+                    <Alias value="PLAYER_CLOCK"/>
                     <Personality template="mxs40peripheralclock" version="1.0">
                         <Param id="intDivider" value="1"/>
                         <Param id="fracDivider" value="0"/>
