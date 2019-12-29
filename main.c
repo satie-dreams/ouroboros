@@ -9,9 +9,9 @@
 
 #include "adc.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_ADC 0
-#define DEBUG_PWM 1
+#define DEBUG_PWM 0
 #define CY_USING_HAL 1
 
 #define PDM_PCM_FIFO_TRG_LVL        128u
@@ -21,8 +21,8 @@
 #define BUFFER_SIZE                 1024
 // ping pong buffer count
 #define BUFFERS_NUM	                2u
-#define THRESHOLD_HYSTERESIS        4u
-#define VOLUME_RATIO                (1024u)
+
+#define SAR_CHANNEL                 0u
 
 cyhal_gpio_t led = CYBSP_USER_LED;
 cyhal_gpio_t little_button = CYBSP_USER_BTN;
@@ -66,30 +66,31 @@ const cy_stc_sysint_t fetcher_isr_cfg = {
     .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
 };
 
-uint32_t chan = 0UL;
 uint32_t intr_status = 0u;
 uint16_t adc_code = 0;
+uint16_t lcode = 0;
 
 void SAR_Interrupt() {
     intr_status = Cy_SAR_GetInterruptStatus(SAR);
 
     if ((intr_status & (uint32_t) CY_SAR_INTR_EOS_MASK) == (uint32_t) CY_SAR_INTR_EOS_MASK) {
+        adc_code = Cy_SAR_GetResult16(SAR, SAR_CHANNEL);
 
-        // invert logic
-        adc_code = 63 - (Cy_SAR_GetResult16(SAR, chan) >> 6);
+        lcode = adc_code >> 6;
 
         if (record_mode) {
             if (empty_buffer)
                 empty_buffer = false;
 
-            buffer[write_idx++] = adc_code;
+            buffer[write_idx++] = lcode;
 
             if (write_idx >= BUFFER_SIZE)
                 write_idx = 0;
         }
 
-        if (DEBUG_ADC)
-            printf("(adc): %d\r\n", adc_code);
+        if (DEBUG_ADC) {
+            printf("(adc): %d -> %d\r\n", adc_code, lcode);
+        }
     }
 
     Cy_SAR_ClearInterrupt(SAR, intr_status);
@@ -193,12 +194,8 @@ int main() {
 
     printf(". . .\r\n");
 
-    uint16_t lcode = 0;
-
     while (true) {
         if (fetch_flag) {
-            lcode = adc_code;
-
             if (!record_mode && !empty_buffer) {
                 lcode += buffer[read_idx++];
                 lcode >>= 1;
@@ -210,10 +207,10 @@ int main() {
             if (DEBUG_PWM)
                 printf("(lpwm): %u\r\n", lcode);
 
-            if (lcode > 63)
-                lcode = 63;
 
-            Cy_TCPWM_PWM_SetCompare0(PLAYER_HW, PLAYER_NUM, lcode);
+            if (!DEBUG_ADC) {
+                Cy_TCPWM_PWM_SetCompare0(PLAYER_HW, PLAYER_NUM, lcode);
+            }
 
             fetch_flag = false;
         }

@@ -4,35 +4,7 @@
     <Devices>
         <Device mpn="CY8C624ABZI-D44">
             <BlockConfig>
-                <Block location="audioss[0].pdm[0]">
-                    <Alias value="CYBSP_PDM_PCM"/>
-                    <Personality template="mxs40pdm" version="1.0">
-                        <Param id="chanSwap" value="false"/>
-                        <Param id="gainLeft" value="CY_PDM_PCM_BYPASS"/>
-                        <Param id="gainRight" value="CY_PDM_PCM_BYPASS"/>
-                        <Param id="chanSelect" value="CY_PDM_PCM_OUT_CHAN_RIGHT"/>
-                        <Param id="highPassDisable" value="false"/>
-                        <Param id="highPassFilterGain" value="1"/>
-                        <Param id="rxNotEmpty" value="false"/>
-                        <Param id="rxOverflow" value="false"/>
-                        <Param id="rxTrig" value="true"/>
-                        <Param id="rxUnderflow" value="false"/>
-                        <Param id="signExtension" value="false"/>
-                        <Param id="wordLength" value="CY_PDM_PCM_WLEN_16_BIT"/>
-                        <Param id="rxFifoDmaEnable" value="true"/>
-                        <Param id="rxFifoTriggerLevel" value="128"/>
-                        <Param id="softMuteEnable" value="false"/>
-                        <Param id="softMuteFineGain" value="1"/>
-                        <Param id="softMuteCycles" value="CY_PDM_PCM_SOFT_MUTE_CYCLES_96"/>
-                        <Param id="clkDiv" value="CY_PDM_PCM_CLK_DIV_1_4"/>
-                        <Param id="mClkDiv" value="CY_PDM_PCM_CLK_DIV_BYPASS"/>
-                        <Param id="ckoDiv" value="3"/>
-                        <Param id="ckoDelay" value="0"/>
-                        <Param id="sincDecRate" value="64"/>
-                        <Param id="extClock" value="false"/>
-                        <Param id="inFlash" value="true"/>
-                    </Personality>
-                </Block>
+                <Block location="audioss[0].pdm[0]"/>
                 <Block location="cpuss[0].dap[0]">
                     <Personality template="mxs40dap" version="1.0">
                         <Param id="dbgMode" value="SWD"/>
@@ -140,19 +112,6 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="ioss[0].port[10].pin[4]">
-                    <Personality template="mxs40pin" version="1.1">
-                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
-                        <Param id="initialState" value="1"/>
-                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
-                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
-                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
-                        <Param id="driveStrength" value="CY_GPIO_DRIVE_1_2"/>
-                        <Param id="sioOutputBuffer" value="true"/>
-                        <Param id="inFlash" value="true"/>
-                    </Personality>
-                </Block>
-                <Block location="ioss[0].port[11].pin[7]"/>
                 <Block location="ioss[0].port[12].pin[0]">
                     <Alias value="HERO"/>
                     <Personality template="mxs40pin" version="1.1">
@@ -166,8 +125,6 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="ioss[0].port[12].pin[1]"/>
-                <Block location="ioss[0].port[12].pin[4]"/>
                 <Block location="ioss[0].port[1].pin[0]">
                     <Alias value="CYBSP_CSD_TX"/>
                     <Personality template="mxs40pin" version="1.1">
@@ -181,7 +138,6 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="ioss[0].port[3].pin[0]"/>
                 <Block location="ioss[0].port[6].pin[4]">
                     <Alias value="CYBSP_SWO"/>
                     <Personality template="mxs40pin" version="1.1">
@@ -487,8 +443,8 @@
                 </Block>
                 <Block location="pass[0].aref[0]">
                     <Personality template="mxs40aref" version="1.0">
-                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_LOCAL_1_2V"/>
-                        <Param id="external_vref_voltage" value="0.900"/>
+                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_EXTERNAL"/>
+                        <Param id="external_vref_voltage" value="0.860"/>
                         <Param id="iztat_source" value="CY_SYSANALOG_IZTAT_SOURCE_LOCAL"/>
                         <Param id="deep_sleep_mode" value="CY_SYSANALOG_DEEPSLEEP_DISABLE"/>
                         <Param id="inFlash" value="true"/>
@@ -503,7 +459,7 @@
                         <Param id="is_variable_clock" value="false"/>
                         <Param id="soc_en" value="false"/>
                         <Param id="vneg_select" value="CY_SAR_NEG_SEL_VREF"/>
-                        <Param id="sample_rate" value="58600"/>
+                        <Param id="sample_rate" value="131072"/>
                         <Param id="diff_format" value="CY_SAR_DIFFERENTIAL_UNSIGNED"/>
                         <Param id="se_format" value="CY_SAR_SINGLE_ENDED_UNSIGNED"/>
                         <Param id="trigger_mode" value="CY_SAR_TRIGGER_MODE_FW_AND_HWEDGE"/>
@@ -969,14 +925,6 @@
             </BlockConfig>
             <Netlist>
                 <Net>
-                    <Port name="audioss[0].pdm[0].clock[0]"/>
-                    <Port name="srss[0].clock[0].hfclk[1].root_clk[0]"/>
-                </Net>
-                <Net>
-                    <Port name="audioss[0].pdm[0].pdm_clk[0]"/>
-                    <Port name="ioss[0].port[10].pin[4].digital_out[0]"/>
-                </Net>
-                <Net>
                     <Port name="cpuss[0].dap[0].swj_swclk_tclk[0]"/>
                     <Port name="ioss[0].port[6].pin[7].digital_in[0]"/>
                 </Net>
@@ -1070,7 +1018,6 @@
                         <Port name="ioss[0].port[8].pin[7].analog[0]"/>
                     </Arm>
                 </Mux>
-                <Mux name="Vminus" location="pass[0].sar[0]"/>
                 <Mux name="Vplus" location="pass[0].sar[0]">
                     <Arm>
                         <Port name="ioss[0].port[10].pin[0].analog[0]"/>
