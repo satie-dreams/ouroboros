@@ -1,4 +1,6 @@
 #include "stdlib.h"
+#define CY_USING_HAL 1
+
 #include "cy_pdl.h"
 #include "cyhal.h"
 #include "cybsp.h"
@@ -8,20 +10,13 @@
 #include "cy_sysint.h"
 
 #include "adc.h"
+#include "sd_io.h"
 
 #define DEBUG 0
 #define DEBUG_ADC 0
 #define DEBUG_PWM 0
-#define CY_USING_HAL 1
 
-#define PDM_PCM_FIFO_TRG_LVL        128u
-// How many blocks to fetch in one go
-#define BLOCK_BATCH_NUM             2
-// How many of 16bit to store in one ping pong buffer
-#define BUFFER_SIZE                 1024
-// ping pong buffer count
-#define BUFFERS_NUM	                2u
-
+#define BUFFER_SIZE                 512*512
 #define SAR_CHANNEL                 0u
 
 cyhal_gpio_t led = CYBSP_USER_LED;
@@ -29,16 +24,13 @@ cyhal_gpio_t little_button = CYBSP_USER_BTN;
 cyhal_gpio_t hero_pin = HERO_HAL_PORT_PIN;
 
 uint16_t buffer[BUFFER_SIZE];
+uint8_t buf_idx = 0;
 
 volatile bool pdm_pcm_flag = false;
 volatile bool record_mode = false;
 volatile bool fetch_flag = false;
+volatile bool adc_flag = false;
 bool empty_buffer = true;
-
-cy_stc_sd_host_context_t sdHostContext;
-uint32_t volume = 0;
-uint32_t num_samples = 0;
-uint32_t noise_threshold = 2u;
 
 volatile uint8_t sineidx = 0;
 
@@ -68,29 +60,12 @@ const cy_stc_sysint_t fetcher_isr_cfg = {
 
 uint32_t intr_status = 0u;
 uint16_t adc_code = 0;
-uint16_t lcode = 0;
 
 void SAR_Interrupt() {
     intr_status = Cy_SAR_GetInterruptStatus(SAR);
 
     if ((intr_status & (uint32_t) CY_SAR_INTR_EOS_MASK) == (uint32_t) CY_SAR_INTR_EOS_MASK) {
-        adc_code = Cy_SAR_GetResult16(SAR, SAR_CHANNEL);
-
-        lcode = adc_code >> 6;
-
-        if (record_mode) {
-            if (empty_buffer)
-                empty_buffer = false;
-
-            buffer[write_idx++] = lcode;
-
-            if (write_idx >= BUFFER_SIZE)
-                write_idx = 0;
-        }
-
-        if (DEBUG_ADC) {
-            printf("(adc): %d -> %d\r\n", adc_code, lcode);
-        }
+        adc_flag = true;
     }
 
     Cy_SAR_ClearInterrupt(SAR, intr_status);
@@ -102,7 +77,6 @@ void little_button_isr_handler(void *callback_arg, cyhal_gpio_event_t event) {
 
     // cyclic buffer from read_idx to write_idx;
     read_idx = write_idx + 1;
-
 
     if (DEBUG) {
         print_array("buffer: ", buffer, BUFFER_SIZE);
@@ -144,7 +118,6 @@ void handle_error(char* msg) {
     CY_ASSERT(0);
 }
 
-cy_rslt_t status;
 
 int main() {
     if (cybsp_init() != CY_RSLT_SUCCESS)
@@ -158,7 +131,10 @@ int main() {
 	// \x1b[2J\x1b[;H - ANSI ESC sequence for clearing screen
     printf("\x1b[2J\x1b[;H");
 
-    status = cyhal_gpio_init(led, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
+    cy_rslt_t status = cyhal_gpio_init(
+        led, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF
+    );
+
     if (status != CY_RSLT_SUCCESS)
         handle_error("(init): failed led");
 
@@ -166,10 +142,14 @@ int main() {
     cyhal_gpio_enable_event(little_button, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
     cyhal_gpio_register_callback(little_button, little_button_isr_handler, NULL);
 
-    // 6-bit left pwm
-    Cy_TCPWM_PWM_Init(PLAYER_HW, PLAYER_NUM, &PLAYER_config);
-    Cy_TCPWM_PWM_Enable(PLAYER_HW, PLAYER_NUM);
-    Cy_TCPWM_TriggerStart(PLAYER_HW, PLAYER_MASK);
+    // two pwms for playing
+    Cy_TCPWM_PWM_Init(PLAYER_L_HW, PLAYER_L_NUM, &PLAYER_L_config);
+    Cy_TCPWM_PWM_Enable(PLAYER_L_HW, PLAYER_L_NUM);
+    Cy_TCPWM_TriggerStart(PLAYER_L_HW, PLAYER_L_MASK);
+
+    Cy_TCPWM_PWM_Init(PLAYER_R_HW, PLAYER_R_NUM, &PLAYER_R_config);
+    Cy_TCPWM_PWM_Enable(PLAYER_R_HW, PLAYER_R_NUM);
+    Cy_TCPWM_TriggerStart(PLAYER_R_HW, PLAYER_R_MASK);
 
     // fetching real data
     Cy_SysInt_Init(&fetcher_isr_cfg, fetcher_isr_handler);
@@ -192,27 +172,54 @@ int main() {
 
     adc_init();
 
-    printf(". . .\r\n");
+    printf("(done initializing)\r\n");
+
+    uint8_t lcode = 0;
+    uint8_t rcode = 0;
 
     while (true) {
         if (fetch_flag) {
-            if (!record_mode && !empty_buffer) {
-                lcode += buffer[read_idx++];
-                lcode >>= 1;
+            if (!record_mode) {
+                adc_code += buffer[read_idx++];
+                adc_code >>= 1;
 
-                if (read_idx >= BUFFER_SIZE)
+                if (read_idx >= BUFFER_SIZE) {
                     read_idx = 0;
+                }
             }
 
-            if (DEBUG_PWM)
-                printf("(lpwm): %u\r\n", lcode);
+            lcode = adc_code >> 6;
+            rcode = adc_code & 0x3f;
 
+            if (DEBUG_PWM)
+                printf("(pwm): %u -> (%u, %u)\r\n", adc_code, lcode, rcode);
 
             if (!DEBUG_ADC) {
-                Cy_TCPWM_PWM_SetCompare0(PLAYER_HW, PLAYER_NUM, lcode);
+                Cy_TCPWM_PWM_SetCompare0(PLAYER_L_HW, PLAYER_L_NUM, lcode);
+                Cy_TCPWM_PWM_SetCompare0(PLAYER_R_HW, PLAYER_R_NUM, rcode);
             }
 
             fetch_flag = false;
+        }
+
+        if (adc_flag) {
+            adc_code = Cy_SAR_GetResult16(SAR, SAR_CHANNEL);
+
+            if (record_mode) {
+                buffer[write_idx++] = adc_code;
+
+                if (write_idx >= BUFFER_SIZE) {
+                    record_mode != record_mode;
+                    cyhal_gpio_toggle(led);
+                    write_idx = 0;
+                }
+            }
+
+            if (DEBUG_ADC) {
+                printf("(adc): %d\r\n", adc_code);
+            }
+
+            adc_flag = false;
         }
     }
 }
