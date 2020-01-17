@@ -22,9 +22,12 @@
 cyhal_gpio_t led = CYBSP_USER_LED;
 cyhal_gpio_t little_button = CYBSP_USER_BTN;
 cyhal_gpio_t hero_pin = HERO_HAL_PORT_PIN;
+cyhal_gpio_t rec_pin = RECORDINGSTATE_PIN;
 
 uint16_t buffer[BUFFER_SIZE];
 uint8_t buf_idx = 0;
+
+int isRecording = 0;
 
 volatile bool pdm_pcm_flag = false;
 volatile bool record_mode = false;
@@ -178,6 +181,11 @@ int main() {
     uint8_t rcode = 0;
 
     while (true) {
+
+    	if (1UL == Cy_GPIO_Read(RECORDINGSTATE_PORT, RECORDINGSTATE_NUM)){
+    		printf("Recording");
+    		cyhal_gpio_toggle(led);
+    	}
         if (fetch_flag) {
             if (!record_mode) {
                 adc_code += buffer[read_idx++];
