@@ -578,6 +578,20 @@
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="peri[0].div_16[5]">
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="1"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
+                <Block location="peri[0].div_16[6]">
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="1"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="peri[0].div_24_5[0]">
                     <Alias value="SINEHELP_CLOCK"/>
                 </Block>
@@ -625,14 +639,7 @@
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="peri[0].div_8[6]">
-                    <Alias value="PLAYER_CLOCK"/>
-                    <Personality template="mxs40peripheralclock" version="1.0">
-                        <Param id="intDivider" value="1"/>
-                        <Param id="fracDivider" value="0"/>
-                        <Param id="startOnReset" value="true"/>
-                    </Personality>
-                </Block>
+                <Block location="peri[0].div_8[6]"/>
                 <Block location="peri[0].div_8[7]">
                     <Personality template="mxs40peripheralclock" version="1.0">
                         <Param id="intDivider" value="1"/>
@@ -995,6 +1002,12 @@
                 <Net>
                     <Port name="peri[0].div_16[4].clk[0]"/>
                     <Port name="tcpwm[0].cnt[0].clock[0]"/>
+                </Net>
+                <Net>
+                    <Port name="peri[0].div_16[0].clk[0]"/>
+                    <Port name="tcpwm[0].cnt[7].clock[0]"/>
+                    <Port name="tcpwm[1].cnt[1].clock[0]"/>
+                    <Port name="tcpwm[1].cnt[20].clock[0]"/>
                 </Net>
                 <Mux name="sense" location="csd[0].csd[0]">
                     <Arm>
