@@ -416,7 +416,7 @@
                 </Block>
                 <Block location="pass[0].aref[0]">
                     <Personality template="mxs40aref" version="1.0">
-                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_EXTERNAL"/>
+                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_LOCAL_1_2V"/>
                         <Param id="external_vref_voltage" value="0.850"/>
                         <Param id="iztat_source" value="CY_SYSANALOG_IZTAT_SOURCE_LOCAL"/>
                         <Param id="deep_sleep_mode" value="CY_SYSANALOG_DEEPSLEEP_DISABLE"/>
@@ -432,7 +432,7 @@
                         <Param id="is_variable_clock" value="false"/>
                         <Param id="soc_en" value="false"/>
                         <Param id="vneg_select" value="CY_SAR_NEG_SEL_VREF"/>
-                        <Param id="sample_rate" value="25000"/>
+                        <Param id="sample_rate" value="50000"/>
                         <Param id="diff_format" value="CY_SAR_DIFFERENTIAL_UNSIGNED"/>
                         <Param id="se_format" value="CY_SAR_SINGLE_ENDED_UNSIGNED"/>
                         <Param id="trigger_mode" value="CY_SAR_TRIGGER_MODE_FW_AND_HWEDGE"/>
@@ -559,7 +559,7 @@
                 <Block location="peri[0].div_16[2]">
                     <Alias value="CLK_FETCHER"/>
                     <Personality template="mxs40peripheralclock" version="1.0">
-                        <Param id="intDivider" value="2025"/>
+                        <Param id="intDivider" value="1022"/>
                         <Param id="fracDivider" value="0"/>
                         <Param id="startOnReset" value="true"/>
                     </Personality>
@@ -821,10 +821,10 @@
                         <Param id="RunMode" value="CY_TCPWM_PWM_CONTINUOUS"/>
                         <Param id="DeadClocks" value="0"/>
                         <Param id="EnablePeriodSwap" value="false"/>
-                        <Param id="Period0" value="32768"/>
+                        <Param id="Period0" value="63"/>
                         <Param id="Period1" value="32768"/>
                         <Param id="EnableCompareSwap" value="false"/>
-                        <Param id="Compare0" value="16384"/>
+                        <Param id="Compare0" value="0"/>
                         <Param id="Compare1" value="16384"/>
                         <Param id="InterruptSource" value="CY_TCPWM_INT_NONE"/>
                         <Param id="CountInput" value="CY_TCPWM_INPUT_DISABLED"/>
@@ -983,6 +983,12 @@
                 <Net>
                     <Port name="pass[0].sar[0].clock_sar[0]"/>
                     <Port name="peri[0].div_8[5].clk[0]"/>
+                </Net>
+                <Net>
+                    <Port name="peri[0].div_16[0].clk[0]"/>
+                    <Port name="tcpwm[0].cnt[7].clock[0]"/>
+                    <Port name="tcpwm[1].cnt[1].clock[0]"/>
+                    <Port name="tcpwm[1].cnt[20].clock[0]"/>
                 </Net>
                 <Net>
                     <Port name="peri[0].div_16[1].clk[0]"/>
