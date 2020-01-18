@@ -442,7 +442,7 @@
                 </Block>
                 <Block location="pass[0].aref[0]">
                     <Personality template="mxs40aref" version="1.0">
-                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_EXTERNAL"/>
+                        <Param id="vref_source" value="CY_SYSANALOG_VREF_SOURCE_LOCAL_1_2V"/>
                         <Param id="external_vref_voltage" value="0.850"/>
                         <Param id="iztat_source" value="CY_SYSANALOG_IZTAT_SOURCE_LOCAL"/>
                         <Param id="deep_sleep_mode" value="CY_SYSANALOG_DEEPSLEEP_DISABLE"/>
@@ -585,7 +585,7 @@
                 <Block location="peri[0].div_16[2]">
                     <Alias value="CLK_FETCHER"/>
                     <Personality template="mxs40peripheralclock" version="1.0">
-                        <Param id="intDivider" value="1010"/>
+                        <Param id="intDivider" value="1022"/>
                         <Param id="fracDivider" value="0"/>
                         <Param id="startOnReset" value="true"/>
                     </Personality>
