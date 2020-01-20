@@ -12,7 +12,7 @@
 #include "adc.h"
 #include "sd_io.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_ADC 0
 #define DEBUG_PWM 0
 
@@ -22,18 +22,15 @@
 cyhal_gpio_t led = CYBSP_USER_LED;
 cyhal_gpio_t little_button = CYBSP_USER_BTN;
 cyhal_gpio_t hero_pin = HERO_HAL_PORT_PIN;
-cyhal_gpio_t rec_pin = RECORDINGSTATE_PIN;
 
 uint16_t buffer[BUFFER_SIZE];
 uint8_t buf_idx = 0;
 
-int isRecording = 0;
-
 volatile bool pdm_pcm_flag = false;
 volatile bool record_mode = false;
 volatile bool fetch_flag = false;
+volatile bool hero_flag = false;
 volatile bool adc_flag = false;
-bool empty_buffer = true;
 
 volatile uint8_t sineidx = 0;
 
@@ -76,14 +73,9 @@ void SAR_Interrupt() {
 
 void little_button_isr_handler(void *callback_arg, cyhal_gpio_event_t event) {
     cyhal_gpio_toggle(led);
-    cyhal_gpio_toggle(hero_pin);
 
     // cyclic buffer from read_idx to write_idx;
     read_idx = write_idx + 1;
-
-    if (DEBUG) {
-        print_array("buffer: ", buffer, BUFFER_SIZE);
-    }
 
     record_mode = !record_mode;
 
@@ -145,6 +137,10 @@ int main() {
     cyhal_gpio_enable_event(little_button, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
     cyhal_gpio_register_callback(little_button, little_button_isr_handler, NULL);
 
+    cyhal_gpio_init(hero_pin, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
+    cyhal_gpio_enable_event(hero_pin, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
+    cyhal_gpio_register_callback(hero_pin, little_button_isr_handler, NULL);
+
     // two pwms for playing
     Cy_TCPWM_PWM_Init(PLAYER_L_HW, PLAYER_L_NUM, &PLAYER_L_config);
     Cy_TCPWM_PWM_Enable(PLAYER_L_HW, PLAYER_L_NUM);
@@ -181,15 +177,20 @@ int main() {
     uint8_t rcode = 0;
 
     while (true) {
+        if (hero_flag) {
+            record_mode = !record_mode;
 
-    	if (1UL == Cy_GPIO_Read(RECORDINGSTATE_PORT, RECORDINGSTATE_NUM)){
-    		printf("Recording");
-    		cyhal_gpio_toggle(led);
-    	}
+            read_idx = write_idx + 1;
+
+            if (DEBUG)
+                printf("?record_mode: %d\r\n", record_mode);
+
+            hero_flag = 0;
+        }
+
         if (fetch_flag) {
             if (!record_mode) {
                 adc_code += buffer[read_idx++];
-                adc_code >>= 1;
 
                 if (read_idx >= BUFFER_SIZE) {
                     read_idx = 0;
@@ -217,7 +218,6 @@ int main() {
                 buffer[write_idx++] = adc_code;
 
                 if (write_idx >= BUFFER_SIZE) {
-                    record_mode != record_mode;
                     cyhal_gpio_toggle(led);
                     write_idx = 0;
                 }
