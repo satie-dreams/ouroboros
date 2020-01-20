@@ -19,34 +19,24 @@
 #define BUFFER_SIZE                 512*512
 #define SAR_CHANNEL                 0u
 
-cyhal_gpio_t led = CYBSP_USER_LED;
+cyhal_gpio_t led           = CYBSP_USER_LED;
 cyhal_gpio_t little_button = CYBSP_USER_BTN;
-cyhal_gpio_t hero_pin = HERO_HAL_PORT_PIN;
+cyhal_gpio_t hero_pin      = HERO_HAL_PORT_PIN;
 
 uint16_t buffer[BUFFER_SIZE];
-uint8_t buf_idx = 0;
 
 volatile bool pdm_pcm_flag = false;
-volatile bool record_mode = false;
-volatile bool fetch_flag = false;
-volatile bool hero_flag = false;
-volatile bool adc_flag = false;
+volatile bool record_mode  = false;
+volatile bool fetch_flag   = false;
+volatile bool hero_flag    = false;
+volatile bool adc_flag     = false;
 
 volatile uint8_t sineidx = 0;
 
 static const uint16_t sinetable[256] = {31, 32, 33, 33, 34, 35, 36, 36, 37, 38, 39, 39, 40, 41, 41, 42, 43, 43, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 51, 52, 52, 53, 53, 53, 54, 54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 56, 56, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 58, 58, 58, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 56, 56, 56, 56, 56, 56, 55, 55, 55, 55, 54, 54, 54, 53, 53, 53, 52, 52, 51, 51, 51, 50, 50, 49, 49, 48, 48, 47, 46, 46, 45, 45, 44, 43, 43, 42, 41, 41, 40, 39, 39, 38, 37, 36, 36, 35, 34, 33, 33, 32, 31, 30, 29, 29, 28, 27, 26, 26, 25, 24, 23, 23, 22, 21, 21, 20, 19, 19, 18, 17, 17, 16, 16, 15, 14, 14, 13, 13, 12, 12, 11, 11, 11, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 19, 19, 20, 21, 21, 22, 23, 23, 24, 25, 26, 26, 27, 28, 29, 29, 30};
 
-uint16_t write_idx = 0;
-uint16_t read_idx = 0;
-
-const cy_stc_sysint_t pdm_pcm_isr_cfg = {
-#if CY_IP_MXAUDIOSS_INSTANCES == 1
-    .intrSrc = (IRQn_Type) audioss_interrupt_pdm_IRQn,
-#else
-    .intrSrc = (IRQn_Type) audioss_0_interrupt_pdm_IRQn,
-#endif
-    .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
-};
+uint16_t write_idx = 0u;
+uint16_t read_idx  = 0u;
 
 const cy_stc_sysint_t sine_isr_cfg = {
     .intrSrc = (IRQn_Type) tcpwm_1_interrupts_21_IRQn,
@@ -57,7 +47,6 @@ const cy_stc_sysint_t fetcher_isr_cfg = {
     .intrSrc = (IRQn_Type) FETCHER_IRQ,
     .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
 };
-
 
 const cy_stc_sysint_t clock_isr_cfg = {
     .intrSrc = (IRQn_Type) CLOCK_MAIN_IRQ,
@@ -70,10 +59,10 @@ const cy_stc_sysint_t hero_btn_isr_cfg = {
 };
 
 uint32_t intr_status = 0u;
-uint16_t adc_code = 0;
+uint16_t adc_code = 0u;
 
-uint32_t clock_value = 0;
-uint32_t last_time_when_btn_waas_presed = 0;
+uint32_t clock_value = 0u;
+uint32_t last_time_when_btn_was_pressed = 0u;
 
 
 void SAR_Interrupt() {
@@ -96,12 +85,6 @@ void little_button_isr_handler() {
 
     if (DEBUG)
         printf("record_mode: %d\r\n", record_mode);
-}
-
-void pdm_pcm_isr_handler() {
-    pdm_pcm_flag = true;
-
-    NVIC_DisableIRQ(pdm_pcm_isr_cfg.intrSrc);
 }
 
 void sine_isr_handler() {
@@ -135,8 +118,8 @@ void clock_isr_handler() {
 }
 
 void hero_btn_isr_handler() {
-	if (clock_value - last_time_when_btn_waas_presed > 1) {
-		last_time_when_btn_waas_presed = clock_value;
+	if (clock_value - last_time_when_btn_was_pressed > 1) {
+		last_time_when_btn_was_pressed = clock_value;
 
 		little_button_isr_handler();
 	}
@@ -183,17 +166,19 @@ int main() {
     Cy_TCPWM_TriggerStart(FETCHER_HW, FETCHER_MASK);
     Cy_TCPWM_PWM_Enable(FETCHER_HW, FETCHER_NUM);
 
-    // playing testing wave
-    Cy_TCPWM_PWM_Init(SINE_PLAYER_HW, SINE_PLAYER_NUM, &SINE_PLAYER_config);
-    Cy_TCPWM_PWM_Enable(SINE_PLAYER_HW, SINE_PLAYER_NUM);
-    Cy_TCPWM_TriggerStart(SINE_PLAYER_HW, SINE_PLAYER_MASK);
+    if (DEBUG) {
+        // playing testing wave
+        Cy_TCPWM_PWM_Init(SINE_PLAYER_HW, SINE_PLAYER_NUM, &SINE_PLAYER_config);
+        Cy_TCPWM_PWM_Enable(SINE_PLAYER_HW, SINE_PLAYER_NUM);
+        Cy_TCPWM_TriggerStart(SINE_PLAYER_HW, SINE_PLAYER_MASK);
 
-    // fetching testing wave
-    Cy_SysInt_Init(&sine_isr_cfg, sine_isr_handler);
-    NVIC_EnableIRQ(sine_isr_cfg.intrSrc);
-    Cy_TCPWM_PWM_Init(SINE_FETCHER_HW, SINE_FETCHER_NUM, &SINE_FETCHER_config);
-    Cy_TCPWM_TriggerStart(SINE_FETCHER_HW, SINE_FETCHER_MASK);
-    Cy_TCPWM_PWM_Enable(SINE_FETCHER_HW, SINE_FETCHER_NUM);
+        // fetching testing wave
+        Cy_SysInt_Init(&sine_isr_cfg, sine_isr_handler);
+        NVIC_EnableIRQ(sine_isr_cfg.intrSrc);
+        Cy_TCPWM_PWM_Init(SINE_FETCHER_HW, SINE_FETCHER_NUM, &SINE_FETCHER_config);
+        Cy_TCPWM_TriggerStart(SINE_FETCHER_HW, SINE_FETCHER_MASK);
+        Cy_TCPWM_PWM_Enable(SINE_FETCHER_HW, SINE_FETCHER_NUM);
+    }
 
     // start clock
 	Cy_SysInt_Init(&clock_isr_cfg, clock_isr_handler);
@@ -206,8 +191,6 @@ int main() {
 	Cy_SysInt_Init(&hero_btn_isr_cfg, hero_btn_isr_handler);
 	NVIC_EnableIRQ(hero_btn_isr_cfg.intrSrc);
 
-
-
     adc_init();
 
     printf("(done initializing)\r\n");
@@ -215,16 +198,14 @@ int main() {
     uint8_t lcode = 0;
     uint8_t rcode = 0;
 
-    //Cy_GPIO_WRITE(HERO_PIN, HERO_NUM, 1);
     while (true) {
-    	//printf("pin 12.0 - %d\r\n", Cy_GPIO_Read(HERO_PORT, HERO_NUM));
         if (hero_flag) {
             record_mode = !record_mode;
 
             read_idx = write_idx + 1;
 
             if (DEBUG)
-                printf("?record_mode: %d\r\n", record_mode);
+                printf("(record_mode): %d\r\n", record_mode);
 
             hero_flag = 0;
         }
