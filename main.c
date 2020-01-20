@@ -12,7 +12,7 @@
 #include "adc.h"
 #include "sd_io.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_ADC 0
 #define DEBUG_PWM 0
 
@@ -58,8 +58,23 @@ const cy_stc_sysint_t fetcher_isr_cfg = {
     .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
 };
 
+
+const cy_stc_sysint_t clock_isr_cfg = {
+    .intrSrc = (IRQn_Type) CLOCK_MAIN_IRQ,
+    .intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
+};
+
+const cy_stc_sysint_t hero_btn_isr_cfg = {
+	.intrSrc = (IRQn_Type) HERO_IRQ,
+	.intrPriority = CYHAL_ISR_PRIORITY_DEFAULT
+};
+
 uint32_t intr_status = 0u;
 uint16_t adc_code = 0;
+
+uint32_t clock_value = 0;
+uint32_t last_time_when_btn_waas_presed = 0;
+
 
 void SAR_Interrupt() {
     intr_status = Cy_SAR_GetInterruptStatus(SAR);
@@ -71,8 +86,8 @@ void SAR_Interrupt() {
     Cy_SAR_ClearInterrupt(SAR, intr_status);
 }
 
-void little_button_isr_handler(void *callback_arg, cyhal_gpio_event_t event) {
-    cyhal_gpio_toggle(led);
+void little_button_isr_handler() {
+	cyhal_gpio_toggle(led);
 
     // cyclic buffer from read_idx to write_idx;
     read_idx = write_idx + 1;
@@ -95,7 +110,7 @@ void sine_isr_handler() {
 }
 
 void fetcher_isr_handler() {
-    fetch_flag = true;
+	fetch_flag = true;
 
     Cy_TCPWM_ClearInterrupt(FETCHER_HW, FETCHER_NUM, CY_TCPWM_INT_ON_TC);
 }
@@ -113,6 +128,21 @@ void handle_error(char* msg) {
     CY_ASSERT(0);
 }
 
+void clock_isr_handler() {
+	clock_value++;
+
+	Cy_TCPWM_ClearInterrupt(CLOCK_MAIN_HW, CLOCK_MAIN_NUM, CY_TCPWM_INT_ON_TC);
+}
+
+void hero_btn_isr_handler() {
+	if (clock_value - last_time_when_btn_waas_presed > 1) {
+		last_time_when_btn_waas_presed = clock_value;
+
+		little_button_isr_handler();
+	}
+
+	Cy_GPIO_ClearInterrupt(HERO_PORT, HERO_NUM);
+}
 
 int main() {
     if (cybsp_init() != CY_RSLT_SUCCESS)
@@ -136,10 +166,6 @@ int main() {
     cyhal_gpio_init(little_button, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
     cyhal_gpio_enable_event(little_button, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
     cyhal_gpio_register_callback(little_button, little_button_isr_handler, NULL);
-
-    cyhal_gpio_init(hero_pin, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
-    cyhal_gpio_enable_event(hero_pin, CYHAL_GPIO_IRQ_FALL, CYHAL_ISR_PRIORITY_DEFAULT, true);
-    cyhal_gpio_register_callback(hero_pin, little_button_isr_handler, NULL);
 
     // two pwms for playing
     Cy_TCPWM_PWM_Init(PLAYER_L_HW, PLAYER_L_NUM, &PLAYER_L_config);
@@ -169,6 +195,19 @@ int main() {
     Cy_TCPWM_TriggerStart(SINE_FETCHER_HW, SINE_FETCHER_MASK);
     Cy_TCPWM_PWM_Enable(SINE_FETCHER_HW, SINE_FETCHER_NUM);
 
+    // start clock
+	Cy_SysInt_Init(&clock_isr_cfg, clock_isr_handler);
+	NVIC_EnableIRQ(clock_isr_cfg.intrSrc);
+	Cy_TCPWM_Counter_Init(CLOCK_MAIN_HW, CLOCK_MAIN_NUM, &CLOCK_MAIN_config);
+	Cy_TCPWM_TriggerStart(CLOCK_MAIN_HW, CLOCK_MAIN_MASK);
+	Cy_TCPWM_Counter_Enable(CLOCK_MAIN_HW, CLOCK_MAIN_NUM);
+
+	// add listener for button
+	Cy_SysInt_Init(&hero_btn_isr_cfg, hero_btn_isr_handler);
+	NVIC_EnableIRQ(hero_btn_isr_cfg.intrSrc);
+
+
+
     adc_init();
 
     printf("(done initializing)\r\n");
@@ -176,7 +215,9 @@ int main() {
     uint8_t lcode = 0;
     uint8_t rcode = 0;
 
+    //Cy_GPIO_WRITE(HERO_PIN, HERO_NUM, 1);
     while (true) {
+    	//printf("pin 12.0 - %d\r\n", Cy_GPIO_Read(HERO_PORT, HERO_NUM));
         if (hero_flag) {
             record_mode = !record_mode;
 

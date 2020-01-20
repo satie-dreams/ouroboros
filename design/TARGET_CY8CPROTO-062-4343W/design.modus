@@ -87,25 +87,22 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="ioss[0].port[10].pin[3]"/>
-                <Block location="ioss[0].port[10].pin[5]"/>
-                <Block location="ioss[0].port[11].pin[5]">
+                <Block location="ioss[0].port[11].pin[7]">
+                    <Alias value="NOTHERO"/>
+                </Block>
+                <Block location="ioss[0].port[12].pin[0]">
                     <Alias value="HERO"/>
                     <Personality template="mxs40pin" version="1.1">
                         <Param id="DriveModes" value="CY_GPIO_DM_STRONG"/>
                         <Param id="initialState" value="0"/>
                         <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
-                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
+                        <Param id="isrTrigger" value="CY_GPIO_INTR_BOTH"/>
                         <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
                         <Param id="driveStrength" value="CY_GPIO_DRIVE_1_2"/>
                         <Param id="sioOutputBuffer" value="true"/>
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
-                <Block location="ioss[0].port[11].pin[7]">
-                    <Alias value="NOTHERO"/>
-                </Block>
-                <Block location="ioss[0].port[12].pin[0]"/>
                 <Block location="ioss[0].port[1].pin[0]">
                     <Alias value="CYBSP_CSD_TX"/>
                     <Personality template="mxs40pin" version="1.1">
@@ -598,6 +595,13 @@
                         <Param id="startOnReset" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="peri[0].div_16[7]">
+                    <Personality template="mxs40peripheralclock" version="1.0">
+                        <Param id="intDivider" value="50000"/>
+                        <Param id="fracDivider" value="0"/>
+                        <Param id="startOnReset" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="peri[0].div_24_5[0]">
                     <Alias value="SINEHELP_CLOCK"/>
                 </Block>
@@ -850,6 +854,26 @@
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
+                <Block location="tcpwm[1].cnt[18]">
+                    <Alias value="CLOCK_MAIN"/>
+                    <Personality template="mxs40timercounter" version="1.0">
+                        <Param id="ClockPrescaler" value="CY_TCPWM_COUNTER_PRESCALER_DIVBY_1"/>
+                        <Param id="RunMode" value="CY_TCPWM_COUNTER_CONTINUOUS"/>
+                        <Param id="CountDirection" value="CY_TCPWM_COUNTER_COUNT_UP"/>
+                        <Param id="Period" value="100"/>
+                        <Param id="CompareOrCapture" value="CY_TCPWM_COUNTER_MODE_CAPTURE"/>
+                        <Param id="EnableCompareSwap" value="false"/>
+                        <Param id="Compare0" value="16384"/>
+                        <Param id="Compare1" value="16384"/>
+                        <Param id="CaptureInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="InterruptSource" value="CY_TCPWM_INT_ON_TC"/>
+                        <Param id="CountInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="StopInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="ReloadInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="StartInput" value="CY_TCPWM_INPUT_DISABLED"/>
+                        <Param id="inFlash" value="true"/>
+                    </Personality>
+                </Block>
                 <Block location="tcpwm[1].cnt[1]">
                     <Alias value="PLAYER_L"/>
                     <Personality template="mxs40pwm" version="1.0">
@@ -1013,6 +1037,10 @@
                 <Net>
                     <Port name="peri[0].div_16[4].clk[0]"/>
                     <Port name="tcpwm[0].cnt[0].clock[0]"/>
+                </Net>
+                <Net>
+                    <Port name="peri[0].div_16[7].clk[0]"/>
+                    <Port name="tcpwm[1].cnt[18].clock[0]"/>
                 </Net>
                 <Mux name="sense" location="csd[0].csd[0]">
                     <Arm>
