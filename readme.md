@@ -1,7 +1,11 @@
-general purpose audio looper pedal
+A guitar looper based on PSoC CY8CPROTO-062-4343W
 
-build:
+![](/asts/ouroboros.jpg)
+
+build instruction:
 ```{sh}
 make getlibs
-make
+make program
 ```
+
+Visit wiki for more details
